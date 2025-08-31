@@ -213,14 +213,14 @@ formElement.addEventListener('submit', (e) => {
   e.preventDefault();
 
   const formData = new FormData(formElement);
-  const name = formData.get('name')?.trim();
-  const position = formData.get('position')?.trim();
-  const office = formData.get('office');
-  const age = Number(formData.get('age'));
+  const formName = formData.get('name')?.trim();
+  const formPosition = formData.get('position')?.trim();
+  const formOffice = formData.get('office');
+  const formAge = Number(formData.get('age'));
   const salary = formData.get('salary');
 
   // === Валидация ===
-  if (!name || name.length < 4) {
+  if (!formName || formName.length < 4) {
     pushNotification(
       10,
       10,
@@ -228,10 +228,11 @@ formElement.addEventListener('submit', (e) => {
       'Field "Name" must be at least 4 characters long',
       'error',
     );
+
     return;
   }
 
-  if (!position) {
+  if (!formPosition) {
     pushNotification(
       10,
       10,
@@ -243,7 +244,7 @@ formElement.addEventListener('submit', (e) => {
     return;
   }
 
-  if (!office) {
+  if (!formOffice) {
     pushNotification(
       10,
       10,
@@ -255,7 +256,7 @@ formElement.addEventListener('submit', (e) => {
     return;
   }
 
-  if (Number.isNaN(age) || age < MIN_AGE) {
+  if (Number.isNaN(formAge) || formAge < MIN_AGE) {
     pushNotification(
       10,
       10,
@@ -267,7 +268,7 @@ formElement.addEventListener('submit', (e) => {
     return;
   }
 
-  if (age > MAX_AGE) {
+  if (formAge > MAX_AGE) {
     pushNotification(
       10,
       10,
