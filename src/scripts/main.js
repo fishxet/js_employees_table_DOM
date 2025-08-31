@@ -5,7 +5,6 @@ const formElement = document.createElement('form');
 const tableElement = document.querySelector('table');
 const tableHeadElement = tableElement.rows[0];
 const tableBodyElement = tableElement.querySelector('tbody');
-const rowsArray = Array.from(tableBodyElement.rows);
 const button = document.createElement('button');
 const inputList = ['name', 'position', 'office', 'age', 'salary'];
 const officeList = [
@@ -41,12 +40,7 @@ const pushNotification = (posTop, posRight, title, description, type) => {
   blockElement.classList.add('notification');
   titleElement.classList.add('title');
 
-  if (type === 'success') {
-    blockElement.classList.add('success');
-  } else {
-    blockElement.classList.add('error');
-  }
-
+  blockElement.classList.add(type === 'success' ? 'success' : 'error');
   blockElement.style.top = posTop + 'px';
   blockElement.style.right = posRight + 'px';
   blockElement.setAttribute('data-qa', 'notification');
@@ -95,6 +89,11 @@ inputList.forEach((item) => {
   if (textValue === 'office') {
     input = document.createElement('select');
 
+    const placeholder = new Option('Select office...', '', true, true);
+
+    placeholder.disabled = true;
+    input.appendChild(placeholder);
+
     officeList.forEach((listElement) => {
       const newOption = new Option(toName(listElement.toString()), listElement);
 
@@ -114,8 +113,8 @@ inputList.forEach((item) => {
   formElement.appendChild(labelElement);
 });
 
-[...tableHeadElement.cells].map((x, index) => {
-  x.addEventListener('click', (e) => {
+[...tableHeadElement.cells].forEach((x, index) => {
+  x.addEventListener('click', () => {
     if (lastClickedElement === x) {
       sorted = !sorted;
     } else {
@@ -123,7 +122,9 @@ inputList.forEach((item) => {
       lastClickedElement = x;
     }
 
-    rowsArray.sort((element1, element2) => {
+    const rows = Array.from(tableBodyElement.querySelectorAll('tr'));
+
+    rows.sort((element1, element2) => {
       let firstCell = element1.cells[index].textContent.trim();
       let secondCell = element2.cells[index].textContent.trim();
 
@@ -140,11 +141,8 @@ inputList.forEach((item) => {
         : sortByASC(firstCell, secondCell);
     });
 
-    while (tableBodyElement.lastElementChild) {
-      tableBodyElement.removeChild(tableBodyElement.lastElementChild);
-    }
-
-    rowsArray.forEach((item) => tableBodyElement.appendChild(item));
+    tableBodyElement.innerHTML = '';
+    rows.forEach((row) => tableBodyElement.appendChild(row));
   });
 });
 
@@ -153,19 +151,27 @@ button.textContent = 'Save to table';
 formElement.appendChild(button);
 formElement.classList.add('new-employee-form');
 
-rowsArray.forEach((item) => {
-  item.addEventListener('click', (e) => {
-    e.preventDefault();
+tableBodyElement.addEventListener('click', (e) => {
+  const row = e.target.closest('tr');
 
-    if (lastActiveElement) {
-      lastActiveElement.classList.remove('active');
-    }
-    item.classList.add('active');
-    lastActiveElement = item;
-  });
+  if (!row) {
+    return;
+  }
+
+  if (lastActiveElement) {
+    lastActiveElement.classList.remove('active');
+  }
+  row.classList.add('active');
+  lastActiveElement = row;
 });
 
 tableBodyElement.addEventListener('dblclick', (e) => {
+  const cell = e.target.closest('td');
+
+  if (!cell) {
+    return;
+  }
+
   const activeInput = tableBodyElement.querySelector('.cell-input');
 
   if (activeInput) {
@@ -175,12 +181,12 @@ tableBodyElement.addEventListener('dblclick', (e) => {
       activeInput.value === '' ? activeInput.defaultValue : activeInput.value;
   }
 
-  const cell = e.target.closest('td');
   const inputElement = document.createElement('input');
   const initialValue = cell.textContent;
 
   inputElement.classList.add('cell-input');
   inputElement.value = initialValue;
+  inputElement.defaultValue = initialValue;
   cell.textContent = '';
   cell.append(inputElement);
   inputElement.focus();
@@ -194,6 +200,10 @@ tableBodyElement.addEventListener('dblclick', (e) => {
     if (inputEvent.key === 'Enter') {
       save();
     }
+
+    if (inputEvent.key === 'Escape') {
+      cell.textContent = initialValue;
+    }
   });
 
   inputElement.addEventListener('blur', save);
@@ -203,46 +213,78 @@ formElement.addEventListener('submit', (e) => {
   e.preventDefault();
 
   const formData = new FormData(formElement);
+  const name = formData.get('name')?.trim();
+  const position = formData.get('position')?.trim();
+  const office = formData.get('office');
+  const age = Number(formData.get('age'));
+  const salary = formData.get('salary');
 
-  if (formData.get('name').length < 4) {
+  // === Валидация ===
+  if (!name || name.length < 4) {
     pushNotification(
       10,
       10,
       'Error: Name is too short',
-      'Input Name is too short. \n Field Name must be above four letters long',
+      'Field "Name" must be at least 4 characters long',
       'error',
     );
-
     return;
-  } else if (formData.get('position') === '') {
+  }
+
+  if (!position) {
     pushNotification(
       10,
       10,
       'Error: Position is empty',
-      'Input Position must contain a string. ' +
-        ' \n Field Position cannot be empty',
+      'Field "Position" cannot be empty',
       'error',
     );
 
     return;
-  } else if (formData.get('age') < MIN_AGE) {
+  }
+
+  if (!office) {
     pushNotification(
       10,
       10,
-      `Error: Age is below ${MIN_AGE}`,
-      'Input Age is less than required by system. ' +
-        ` \n Field Age must be above ${MIN_AGE} and less then ${MAX_AGE}`,
+      'Error: Office is required',
+      'Please select an office location',
       'error',
     );
 
     return;
-  } else if (formData.get('age') > MAX_AGE) {
+  }
+
+  if (Number.isNaN(age) || age < MIN_AGE) {
     pushNotification(
       10,
       10,
-      `Error: Age is below ${MIN_AGE}`,
-      'Input Age is less than required by system. ' +
-        ` \n Field Age must be above ${MIN_AGE} and less then ${MAX_AGE}`,
+      'Error: Age is too low',
+      `Age must be at least ${MIN_AGE}`,
+      'error',
+    );
+
+    return;
+  }
+
+  if (age > MAX_AGE) {
+    pushNotification(
+      10,
+      10,
+      'Error: Age is too high',
+      `Age must be at most ${MAX_AGE}`,
+      'error',
+    );
+
+    return;
+  }
+
+  if (!salary || isNaN(Number(salary))) {
+    pushNotification(
+      10,
+      10,
+      'Error: Invalid Salary',
+      'Salary must be a valid number',
       'error',
     );
 
@@ -251,31 +293,28 @@ formElement.addEventListener('submit', (e) => {
 
   const tableRow = document.createElement('tr');
 
-  for (const key of formData.keys()) {
+  inputList.forEach((key) => {
     const tableData = document.createElement('td');
 
     if (key === 'salary') {
-      tableData.textContent = formatValue(formData.get('salary'));
+      tableData.textContent = formatValue(formData.get(key));
     } else {
       tableData.textContent = formData.get(key);
     }
     tableRow.appendChild(tableData);
-  }
-  rowsArray.push(tableRow);
+  });
 
-  while (tableBodyElement.firstElementChild) {
-    tableBodyElement.removeChild(tableBodyElement.firstElementChild);
-  }
-
-  rowsArray.forEach((item) => tableBodyElement.appendChild(item));
+  tableBodyElement.appendChild(tableRow);
 
   pushNotification(
     10,
     10,
-    'Employee added succesfully.',
-    'All of info was correct, so the data was added to the table',
+    'Employee added successfully.',
+    'All information was correct, data was added to the table.',
     'success',
   );
+
+  formElement.reset();
 });
 
 body.appendChild(formElement);
