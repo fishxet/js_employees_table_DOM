@@ -166,6 +166,15 @@ rowsArray.forEach((item) => {
 });
 
 tableBodyElement.addEventListener('dblclick', (e) => {
+  const activeInput = tableBodyElement.querySelector('.cell-input');
+
+  if (activeInput) {
+    const prevCell = activeInput.parentElement;
+
+    prevCell.textContent =
+      activeInput.value === '' ? activeInput.defaultValue : activeInput.value;
+  }
+
   const cell = e.target.closest('td');
   const inputElement = document.createElement('input');
   const initialValue = cell.textContent;
@@ -212,7 +221,7 @@ formElement.addEventListener('submit', (e) => {
       'Error: Position is empty',
       'Input Position must contain a string. ' +
         ' \n Field Position cannot be empty',
-      'warning',
+      'error',
     );
 
     return;
@@ -240,7 +249,7 @@ formElement.addEventListener('submit', (e) => {
     return;
   }
 
-  const tableRow = tableBodyElement.lastElementChild.cloneNode();
+  const tableRow = document.createElement('tr');
 
   for (const key of formData.keys()) {
     const tableData = document.createElement('td');
@@ -252,7 +261,13 @@ formElement.addEventListener('submit', (e) => {
     }
     tableRow.appendChild(tableData);
   }
-  tableBodyElement.appendChild(tableRow);
+  rowsArray.push(tableRow);
+
+  while (tableBodyElement.firstElementChild) {
+    tableBodyElement.removeChild(tableBodyElement.firstElementChild);
+  }
+
+  rowsArray.forEach((item) => tableBodyElement.appendChild(item));
 
   pushNotification(
     10,
